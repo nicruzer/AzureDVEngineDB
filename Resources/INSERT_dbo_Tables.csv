@@ -1,0 +1,4 @@
+TableSchema,TableName,Abbreviation,RecordSourceId
+stage1,kaggle_superhero,STG,6
+stage1,marvel_hero_raw,STG,4
+stage1,superhero_raw,STG,5
