@@ -181,11 +181,14 @@ BEGIN
             [TargetColumnId] INT NOT NULL,
             [IsBusinessKey] BIT NOT NULL,
             [IsDrivingKey] BIT NOT NULL,
-            [IsDependentChild] BIT NOT NULL
-        )
+            [IsDependentChild] BIT NOT NULL,
+            [TargetColumnAlias] VARCHAR(100) NULL,
+            [TargetTableKey] VARCHAR(100) NULL
+        ) 
 
         ;WITH source AS (
-        SELECT DISTINCT tcm.SourceColumnId, ntc.Id AS TargetColumnId, tcm.IsBusinessKey, 0 AS IsDrivingKey, 0 AS IsDependentChild
+        SELECT DISTINCT tcm.SourceColumnId, ntc.Id AS TargetColumnId, tcm.IsBusinessKey, 0 AS IsDrivingKey, 0 AS IsDependentChild,
+            tcm.TargetColumnAlias, tcm.TargetTableKey
         FROM #NewTableColumns ntc 
             INNER JOIN dbo.vw_fulltablecolumns ftc ON ntc.TableVersionId = ftc.TableVersionId
                 AND ntc.ColumnName = ftc.ColumnName
