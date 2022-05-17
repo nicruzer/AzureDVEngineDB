@@ -64,7 +64,7 @@ BEGIN
             CONVERT(INT,tcm.TargetColumnOrdinalPosition),
             tcm.TargetTableColumn
 
-        DECLARE @vaultRSRCId INT = (SELECT Id FROM dbo.RecordSource rs WHERE rs.OrganizationName = 'DATA_VAULT')
+        DECLARE @vaultRSRCId INT = (SELECT Id FROM dbo.RecordSource rs WHERE rs.OrganizationName = 'DATA_VAULT' AND rs.[Name] = 'SYSTEM_DV')
 
         -- Insert new table definitions
         CREATE TABLE #NewTableRecords 
@@ -195,6 +195,19 @@ BEGIN
             INNER JOIN stage1.TableColumnMap tcm ON ftc.TableName = tcm.TargetTableName
                 AND ftc.ColumnName = tcm.TargetTableColumn
                 AND ftc.EntityAbbreviation = tcm.TargetEntityAbbreviation
+
+        UNION
+
+        SELECT DISTINCT ftcsrc.ColumnId AS SourceColumnId, ftc.ColumnId AS TargetColumnId, tcm.IsBusinessKey,
+            dtcm.IsDrivingKey, dtcm.IsDependentChild, -- These two are still updated manually until something better is designed
+            tcm.TargetColumnAlias, tcm.TargetTableKey
+        FROM dbo.vw_fulltablecolumns ftc
+            INNER JOIN stage1.TableColumnMap tcm ON ftc.TableName = tcm.TargetTableName
+                AND ftc.ColumnName = tcm.TargetTableColumn
+                AND ftc.EntityAbbreviation = tcm.TargetEntityAbbreviation
+            INNER JOIN dbo.vw_FullTableColumns ftcsrc ON ftcsrc.ColumnId = tcm.SourceColumnId
+            INNER JOIN dbo.TableColumnMap dtcm ON ftcsrc.ColumnId = dtcm.SourceColumnId
+                AND ftc.ColumnId = dtcm.TargetColumnId
         )
 
         MERGE INTO dbo.TableColumnMap AS tgt 
@@ -204,6 +217,23 @@ BEGIN
         WHEN NOT MATCHED BY TARGET THEN 
             INSERT (SourceColumnId, TargetColumnId, IsBusinessKey, IsDrivingKey, IsDependentChild) 
             VALUES (src.SourceColumnId, src.TargetColumnId, src.IsBusinessKey, src.IsDrivingKey, src.IsDependentChild) 
+        WHEN MATCHED AND
+            (
+                tgt.IsBusinessKey <> src.IsBusinessKey
+                OR tgt.IsDrivingKey <> src.IsDrivingKey
+                OR tgt.IsDependentChild <> src.IsDependentChild
+                OR tgt.TargetColumnAlias <> src.TargetColumnAlias
+                OR tgt.TargetTableKey <> src.TargetTableKey
+            )
+        THEN
+            UPDATE
+                SET SourceColumnId = src.SourceColumnId,
+                TargetColumnId = src.TargetColumnId,
+                IsBusinessKey = src.IsBusinessKey,
+                IsDrivingKey = src.IsDrivingKey,
+                IsDependentChild = src.IsDependentChild,
+                TargetColumnAlias = src.TargetColumnAlias,
+                TargetTableKey = src.TargetTableKey
         OUTPUT inserted.* INTO #NewTableColumnMap;
 
 
