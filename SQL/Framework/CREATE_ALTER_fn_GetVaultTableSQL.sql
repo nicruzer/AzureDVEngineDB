@@ -14,7 +14,8 @@ BEGIN
                 CONCAT_WS(', ',
                     dbo.fn_GetVaultTableKey(ftc.TableId),
                     STRING_AGG(QUOTENAME(ISNULL(tca.TargetColumnAlias,ftc.ColumnName)),', ') WITHIN GROUP (ORDER BY ftc.OrdinalPosition),
-                    'RSRC, LDDTS' -- Hard coded for now. Need a strategy for getting required columns.
+                    'RSRC, LDDTS' 
+                    + CASE WHEN ftc.EntityAbbreviation = 'SAT' THEN ', HashDiff' ELSE '' END -- Hard coded for now. Need a strategy for getting required columns.
                 )
             ) AS SimpleColumnList,
             dbo.fn_GetVaultTableKey(ftc.TableId) AS TableBKeyColumn
@@ -23,7 +24,7 @@ BEGIN
         WHERE ftc.TableSchema = 'vault'
             -- Do not include key column in satellite column list
             AND ftc.ColumnName = (CASE WHEN ftc.AttributeAbbreviation = 'BKEY' AND ftc.EntityAbbreviation = 'SAT' THEN NULL ELSE ftc.ColumnName END)
-        GROUP BY ftc.TableId
+        GROUP BY ftc.TableId, ftc.EntityAbbreviation
     ), colDef AS (
     -- DECLARE @NewLine CHAR(2) = CHAR(13) + CHAR(10)
         SELECT DISTINCT ftc.TableId, ftc.TableName,
