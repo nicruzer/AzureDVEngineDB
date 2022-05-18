@@ -38,23 +38,15 @@ WHERE ftc.TableSchema = 'vault'
 GROUP BY ftc.TableId, ftc.TableName, ftc.EntityAbbreviation
 
 
-SELECT *,
-    CASE 
-        WHEN ftc.AttributeAbbreviation = 'BKEY' THEN '''0'''
-        WHEN ftc.DateNumPrecision IS NULL THEN '' 
-        ELSE '0'
-    END AS GhostRecordValue,
-    CASE 
-        WHEN ftc.AttributeAbbreviation = 'BKEY' THEN '''-1'''
-        WHEN ftc.DateNumPrecision IS NULL THEN '' 
-        ELSE '-1'
-    END AS RequiredNullKeyValue,
-    CASE 
-        WHEN ftc.AttributeAbbreviation = 'BKEY' THEN '''-2'''
-        WHEN ftc.DateNumPrecision IS NULL THEN '' 
-        ELSE '-2'
-    END AS OptionalNullKeyValue
+SELECT 
+    ftc.TableId, zgd.RSRCType, tca.TargetTableKey, zgd.RSRC, zgd.LDDTS,
+    QUOTENAME(STRING_AGG(
+        zgd.[value],'|'
+    ) WITHIN GROUP (ORDER BY ftc.OrdinalPosition),'''') AS BKEY
 FROM dbo.vw_FullTableColumns ftc 
-    CROSS APPLY (SELECT DISTINCT TargetColumnAlias FROM  dbo.TableColumnMap tcm WHERE ftc.ColumnId = tcm.TargetColumnId) tca
+    CROSS APPLY (SELECT DISTINCT TargetTableKey FROM  dbo.TableColumnMap tcm WHERE ftc.ColumnId = tcm.TargetColumnId) tca
+    CROSS APPLY (SELECT * FROM vw_ZeroGhostDefault) zgd
 WHERE ftc.TableSchema = 'vault'
-ORDER BY ftc.TableId, ftc.OrdinalPosition
+    AND tca.TargetTableKey IS NOT NULL
+GROUP BY ftc.TableId, zgd.RSRCType, tca.TargetTableKey, zgd.rsrc, zgd.lddts
+
