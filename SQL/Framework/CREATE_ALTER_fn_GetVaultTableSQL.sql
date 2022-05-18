@@ -34,7 +34,7 @@ BEGIN
             CONCAT_WS(', ' + @NewLine,
                 STRING_AGG(
                     CONCAT_WS(' ',
-                        ISNULL(tca.TargetColumnAlias,ftc.ColumnName),
+                        QUOTENAME(ISNULL(tca.TargetColumnAlias,ftc.ColumnName)),
                         ftc.DataType + 
                         CASE WHEN ISNULL(ftc.CharacterMaxLength,ftc.DateNumPrecision) IS NOT NULL 
                             AND (ftc.DataType LIKE '%CHAR%' OR ftc.DataType LIKE '%DATE%')
@@ -53,7 +53,9 @@ BEGIN
                 ) WITHIN GROUP (ORDER BY ftc.OrdinalPosition), --STRING_AGG
                 'RSRC VARCHAR(4000)',
                 'LDDTS DATETIME2(7)'
-            ) AS ColumnDefinition
+            )
+            + CASE WHEN ftc.EntityAbbreviation = 'SAT' THEN ', HashDiff BINARY(32)' ELSE '' END
+            AS ColumnDefinition
         FROM dbo.vw_FullTableColumns ftc
             CROSS APPLY (SELECT DISTINCT TargetColumnAlias FROM  dbo.TableColumnMap tcm WHERE ftc.ColumnId = tcm.TargetColumnId) tca
         WHERE ftc.TableSchema = 'vault'
