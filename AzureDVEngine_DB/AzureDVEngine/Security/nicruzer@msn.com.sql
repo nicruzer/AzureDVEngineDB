@@ -1,0 +1,5 @@
+CREATE USER [nicruzer@msn.com] FOR EXTERNAL PROVIDER;
+
+
+GO
+
