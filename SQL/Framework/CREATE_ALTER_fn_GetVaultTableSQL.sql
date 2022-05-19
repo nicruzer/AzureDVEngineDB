@@ -47,13 +47,13 @@ BEGIN
                                             END,
                                             CONVERT(VARCHAR,ftc.DateNumPrecision)
                                         ) --ISNULL
-                                ,'(') -- QUOTENAME
+                                ,'(') + CASE WHEN ftc.AttributeAbbreviation = 'BKEY' THEN ' NOT NULL' ELSE '' END -- QUOTENAME
                             ELSE ''
                         END), --CONCAT_WS
                     ', '
                 ) WITHIN GROUP (ORDER BY ftc.OrdinalPosition), --STRING_AGG
-                'RSRC VARCHAR(4000)',
-                'LDDTS DATETIME2(7)'
+                'RSRC VARCHAR(4000) NOT NULL',
+                'LDDTS DATETIME2(7) NOT NULL'
             )
             + CASE WHEN ftc.EntityAbbreviation = 'SAT' THEN ', HashDiff BINARY(32)' ELSE '' END
             AS ColumnDefinition
@@ -88,7 +88,19 @@ BEGIN
                 ) WITHIN GROUP (ORDER BY ftc.OrdinalPosition) , --STRING_AGG
                 z.RSRC,
                 z.LDDTS
-            ) AS GhostNullKeyInsertValue
+            ) 
+            -- HashDiff Logic
+            + CASE WHEN ftc.EntityAbbreviation = 'SAT' 
+                THEN ', CONVERT(BINARY(32),HASHBYTES(''SHA2_256'',UPPER(REPLACE(''' + 
+                    CONVERT(VARCHAR(MAX),STRING_AGG(
+                        CASE WHEN ftc.AttributeAbbreviation = 'BKEY' THEN REPLACE(z.[value],'''','') ELSE 
+                        gv.GHOST_VALUE END,
+                        '|'
+                    ) WITHIN GROUP (ORDER BY ftc.OrdinalPosition)) + ''','''''''',''''))))'
+                ELSE ''
+            END
+            -- End HashDiff Logic
+            AS GhostNullKeyInsertValue
         FROM dbo.vw_FullTableColumns ftc
             CROSS APPLY (SELECT DISTINCT TargetColumnAlias FROM  dbo.TableColumnMap tcm WHERE ftc.ColumnId = tcm.TargetColumnId) tca
             CROSS APPLY (SELECT * FROM zgr WHERE ftc.TableId = zgr.TableId) z
