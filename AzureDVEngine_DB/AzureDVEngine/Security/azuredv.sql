@@ -1,0 +1,5 @@
+CREATE USER [azuredv] FOR EXTERNAL PROVIDER;
+
+
+GO
+
