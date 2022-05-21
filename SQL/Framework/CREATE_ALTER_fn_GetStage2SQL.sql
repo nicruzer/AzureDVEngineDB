@@ -96,7 +96,7 @@ BEGIN
         'IF OBJECT_ID(''[stage2].' + REPLACE(rc.SourceFullTableName,'VW_','') + ''') IS NOT NULL DROP TABLE [stage2].' + REPLACE(rc.SourceFullTableName,'VW_','') + ';' 
         AS Stage2TableDropSQL,
         'IF OBJECT_ID(''[stage2].' + rc.SourceFullTableName + ''') IS NOT NULL ' + @NewLine
-        + ' CREATE TABLE [stage2].' + REPLACE(rc.SourceFullTableName,'VW_','') + ' WITH (DISTRIBUTION = ROUND_ROBIN) AS ' + @NewLine
+        + ' CREATE TABLE [stage2].' + REPLACE(rc.SourceFullTableName,'VW_','') + ' WITH (DISTRIBUTION = ROUND_ROBIN, HEAP) AS ' + @NewLine
         + ' SELECT * FROM [stage2].' + rc.SourceFullTableName + '; '
         AS Stage2TableCreateSQL
     FROM DistinctRequiredColumns rc 
