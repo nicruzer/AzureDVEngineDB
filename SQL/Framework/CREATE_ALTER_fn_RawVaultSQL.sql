@@ -20,23 +20,35 @@ BEGIN
             vftc.TableVersionId,
             vftc.FQTableName,
             PARSENAME(vftc.FullTableName,1) AS FullTableName,
+
             CONCAT_WS(
                 ', ',
-                dbo.fn_GetVaultTableKey(vftc.TableId),
+                CONCAT_WS('.','STG',dbo.fn_GetVaultTableKey(vftc.TableId)),
                 STRING_AGG(
-                    CONCAT_WS('.','STG',QUOTENAME(vftc.ColumnName)),
+                    CONCAT_WS('.','STG', QUOTENAME(
+                        CASE WHEN vftc.ColumnName = LinkAlias.TargetColumnName
+                            THEN LinkAlias.TargetColumnAlias
+                            ELSE vftc.ColumnName
+                        END
+                    )),
                     ', '
                 ) WITHIN GROUP (ORDER BY vftc.OrdinalPosition),
                 'STG.RSRC',
                 'CURRENT_TIMESTAMP AT TIME ZONE ''UTC'' AT TIME ZONE ''Central Standard Time'' AS LDDTS',
-                CASE WHEN vftc.EntityAbbreviation = 'SAT' THEN 'HashDiff' ELSE NULL END
+                CASE WHEN vftc.EntityAbbreviation = 'SAT' THEN 'STG.HashDiff' ELSE NULL END
             )
             AS SourceColumnList,
+
             CONCAT_WS(
                 ', ',
                 dbo.fn_GetVaultTableKey(vftc.TableId),
                 STRING_AGG(
-                    QUOTENAME(vftc.ColumnName),
+                    QUOTENAME(
+                        CASE WHEN vftc.ColumnName = LinkAlias.TargetColumnName
+                            THEN LinkAlias.TargetColumnAlias
+                            ELSE vftc.ColumnName
+                        END
+                    ),
                     ', '
                 ) WITHIN GROUP (ORDER BY vftc.OrdinalPosition),
                 'RSRC',
@@ -45,13 +57,20 @@ BEGIN
             )
             AS TargetColumnList
         FROM dbo.vw_FullTableColumns vftc 
+            OUTER APPLY (
+                SELECT DISTINCT TargetColumnAlias, TargetColumnName
+                FROM stage2.vw_FullTableColumnMap vftcm
+                WHERE vftc.FQTableName = vftcm.TargetFQTableName
+                    AND vftc.ColumnName = vftcm.TargetColumnName
+                    AND vftc.EntityAbbreviation = 'LINK'
+            ) LinkAlias
         WHERE vftc.TableSchema = 'vault'
             AND vftc.ColumnName = CASE WHEN vftc.AttributeAbbreviation = 'BKEY' AND vftc.EntityAbbreviation = 'SAT' THEN NULL ELSE vftc.ColumnName END
         GROUP BY vftc.TableId, vftc.TableVersionId, vftc.FQTableName, vftc.FullTableName, vftc.EntityAbbreviation
     ), SQLElements AS (
         SELECT DISTINCT 
             CONCAT_WS('.',QUOTENAME('stage2'),ftcm.SourceFullTableName) AS SourceView,
-            '[stage2].' + QUOTENAME(CONCAT_WS('_','rv',PARSENAME(ftcm.SourceFullTableName,1),ftcm.TargetEntityAbbreviation)) AS TargetView,
+            '[stage2].' + QUOTENAME(CONCAT_WS('_','rv',PARSENAME(ftcm.SourceFullTableName,1),PARSENAME(ftcm.TargetFQTableName,1))) AS TargetView,
             ftcm.TargetFQTableName,
             ftcm.TargetTableKey,
             ftcm.TargetEntityAbbreviation,
@@ -74,10 +93,10 @@ BEGIN
             ' ON ' +
             CASE
                 WHEN ftcm.TargetEntityAbbreviation IN ('HUB','LINK')
-                    THEN CONCAT_WS('.','STG',ftcm.TargetTableKey) + ' = ' + CONCAT_WS('.',ftcm.TargetEntityAbbreviation,ftcm.TargetTableKey)
+                    THEN CONCAT_WS('.','STG',ftcm.TargetTableKey) + ' = ' + CONCAT_WS('.',ftcm.TargetEntityAbbreviation,ftcm.TargetTableKey) + ' COLLATE DATABASE_DEFAULT '
                 WHEN ftcm.TargetEntityAbbreviation = 'SAT'
                     THEN '('
-                        + CONCAT_WS('.','STG',ftcm.TargetTableKey) + ' = ' + CONCAT_WS('.',ftcm.TargetEntityAbbreviation,ftcm.TargetTableKey) + @NewLine
+                        + CONCAT_WS('.','STG',ftcm.TargetTableKey) + ' = ' + CONCAT_WS('.',ftcm.TargetEntityAbbreviation,ftcm.TargetTableKey) + ' COLLATE DATABASE_DEFAULT ' + @NewLine
                         + ' AND ' + CONCAT_WS('.',ftcm.TargetEntityAbbreviation,'LDDTS') 
                         + ' = '
                         + '('

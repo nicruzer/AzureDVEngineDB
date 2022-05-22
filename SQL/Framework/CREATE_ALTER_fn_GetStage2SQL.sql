@@ -46,6 +46,7 @@ BEGIN
             END AS SourceColumnName,
             vftcm.SourceColumnName AS HashSourceColumnName,
             vftcm.IsSourceCharDataType,
+            vftcm.TargetColumnAlias,
             MIN(vftcm.OrdinalPosition) OVER (PARTITION BY vftcm.SourceFQTableName, vftcm.SourceFullTableName, vftcm.TargetColumnName) AS OrdinalPosition,
             MAX(CONVERT(INT,vftcm.IsBusinessKey)) OVER (PARTITION BY vftcm.SourceFQTableName, vftcm.SourceFullTableName, vftcm.TargetColumnName) AS IsBusinessKey
         FROM stage2.vw_FullTableColumnMap vftcm
