@@ -47,12 +47,14 @@ BEGIN
                                             END,
                                             CONVERT(VARCHAR,ftc.DateNumPrecision)
                                         ) --ISNULL
-                                ,'(') + CASE WHEN ftc.AttributeAbbreviation = 'BKEY' THEN ' NOT NULL' ELSE '' END -- QUOTENAME
+                                ,'(') 
+                                + CASE WHEN ftc.DataType LIKE '%CHAR%' THEN ' COLLATE SQL_Latin1_General_CP1_CI_AS' ELSE '' END
+                                + CASE WHEN ftc.AttributeAbbreviation = 'BKEY' THEN ' NOT NULL' ELSE '' END -- QUOTENAME
                             ELSE ''
                         END), --CONCAT_WS
                     ', '
                 ) WITHIN GROUP (ORDER BY ftc.OrdinalPosition), --STRING_AGG
-                'RSRC VARCHAR(8000) NOT NULL',
+                'RSRC VARCHAR(8000)  COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL',
                 'LDDTS DATETIME2(7) NOT NULL'
             )
             + CASE WHEN ftc.EntityAbbreviation = 'SAT' THEN ', HashDiff BINARY(32)' ELSE '' END

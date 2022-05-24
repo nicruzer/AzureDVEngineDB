@@ -93,10 +93,10 @@ BEGIN
             ' ON ' +
             CASE
                 WHEN ftcm.TargetEntityAbbreviation IN ('HUB','LINK')
-                    THEN CONCAT_WS('.','STG',ftcm.TargetTableKey) + ' = ' + CONCAT_WS('.',ftcm.TargetEntityAbbreviation,ftcm.TargetTableKey) + ' COLLATE DATABASE_DEFAULT '
+                    THEN CONCAT_WS('.','STG',ftcm.TargetTableKey) + ' = ' + CONCAT_WS('.',ftcm.TargetEntityAbbreviation,ftcm.TargetTableKey) + ' COLLATE SQL_Latin1_General_CP1_CI_AS '
                 WHEN ftcm.TargetEntityAbbreviation = 'SAT'
                     THEN '('
-                        + CONCAT_WS('.','STG',ftcm.TargetTableKey) + ' = ' + CONCAT_WS('.',ftcm.TargetEntityAbbreviation,ftcm.TargetTableKey) + ' COLLATE DATABASE_DEFAULT ' + @NewLine
+                        + CONCAT_WS('.','STG',ftcm.TargetTableKey) + ' = ' + CONCAT_WS('.',ftcm.TargetEntityAbbreviation,ftcm.TargetTableKey) + ' COLLATE SQL_Latin1_General_CP1_CI_AS ' + @NewLine
                         + ' AND ' + CONCAT_WS('.',ftcm.TargetEntityAbbreviation,'LDDTS') 
                         + ' = '
                         + '('
