@@ -29,7 +29,7 @@ BEGIN
     -- DECLARE @NewLine CHAR(2) = CHAR(13) + CHAR(10)
         SELECT DISTINCT ftc.TableId, ftc.TableName,
             CASE WHEN ftc.EntityAbbreviation <> 'SAT'
-                THEN CONCAT_WS(' ', dbo.fn_GetVaultTableKey(ftc.TableId),'VARCHAR(4000), ')
+                THEN CONCAT_WS(' ', dbo.fn_GetVaultTableKey(ftc.TableId),'VARCHAR(8000) COLLATE SQL_Latin1_General_CP1_CI_AS, ')
                 ELSE ''
             END +
             CONCAT_WS(', ' + @NewLine,
@@ -42,7 +42,7 @@ BEGIN
                             THEN QUOTENAME(
                                         ISNULL(
                                             CASE WHEN (ftc.CharacterMaxLength = -1 OR ftc.AttributeAbbreviation = 'BKEY')
-                                                THEN '4000' -- MAX columns cannot be included in COLUMNSTORE INDEX
+                                                THEN '8000' -- MAX columns cannot be included in COLUMNSTORE INDEX
                                                 ELSE CONVERT(VARCHAR,ftc.CharacterMaxLength)
                                             END,
                                             CONVERT(VARCHAR,ftc.DateNumPrecision)
@@ -52,7 +52,7 @@ BEGIN
                         END), --CONCAT_WS
                     ', '
                 ) WITHIN GROUP (ORDER BY ftc.OrdinalPosition), --STRING_AGG
-                'RSRC VARCHAR(4000) NOT NULL',
+                'RSRC VARCHAR(8000) NOT NULL',
                 'LDDTS DATETIME2(7) NOT NULL'
             )
             + CASE WHEN ftc.EntityAbbreviation = 'SAT' THEN ', HashDiff BINARY(32)' ELSE '' END

@@ -6,9 +6,9 @@ RETURNS @StageTwoViewSQL TABLE
     TargetFQTableName VARCHAR(512), 
     TargetTableKey VARCHAR(256), 
     TargetEntityAbbreviation VARCHAR(10),
-    DropTargetViewSQL VARCHAR(4000),
-    CreateTargetViewSQL VARCHAR(4000),
-    InsertVaultTableSQL VARCHAR(4000)
+    DropTargetViewSQL VARCHAR(8000),
+    CreateTargetViewSQL VARCHAR(8000),
+    InsertVaultTableSQL VARCHAR(8000)
 )
 AS
 BEGIN
